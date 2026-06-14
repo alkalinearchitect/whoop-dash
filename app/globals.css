@@ -127,3 +127,35 @@ body {
 }
 .recharts-text { fill: var(--text-tertiary) !important; font-size: 11px !important; }
 .recharts-tooltip-wrapper { outline: none !important; }
+
+/* Glassmorphism Card - renamed from .glass to .glass-card to avoid tailwind conflict */
+.glass-card {
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+.glass-card:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-glass-hover);
+}
+
+/* Mobile optimizations */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Prevent text selection on interactive elements */
+button, a { -webkit-tap-highlight-color: transparent; }
+
+/* Touch-friendly sizing */
+@media (max-width: 640px) {
+  .recharts-text { font-size: 9px !important; }
+  .recharts-tooltip-wrapper { font-size: 12px !important; }
+}
+
+/* Smooth scrolling on mobile */
+html { scroll-behavior: smooth; }
+body { overscroll-behavior-y: contain; }
