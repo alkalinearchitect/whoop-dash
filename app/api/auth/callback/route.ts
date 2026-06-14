@@ -29,7 +29,6 @@ export async function GET(req: NextRequest) {
 
     const tokenData = await tokenRes.json();
 
-    // Redirect home with token in cookie
     const response = NextResponse.redirect(new URL('/', req.url));
     response.cookies.set('whoop_access_token', tokenData.access_token, {
       httpOnly: true,

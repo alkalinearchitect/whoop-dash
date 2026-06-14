@@ -5,7 +5,7 @@ import {
   Activity, Moon, Heart, Flame, TrendingUp, TrendingDown,
   Minus, Zap, Droplets, Thermometer, Wind, Award, Calendar,
   Share2, Download, ChevronRight, AlertTriangle, CheckCircle2,
-  Info, Dumbbell, Timer, Target, BarChart3
+  Info, Dumbbell, Timer, Target, BarChart3, Wifi, WifiOff
 } from 'lucide-react';
 import { RecoveryGauge } from '@/components/RecoveryGauge';
 import { MetricCard } from '@/components/MetricCard';
@@ -143,6 +143,25 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Connect WHOOP Button */}
+            {!data?.user && (
+              <a
+                href={`https://api-7.whoop.com/oauth/oauth2/auth?response_type=code&client_id=${process.env.NEXT_PUBLIC_WHOOP_CLIENT_ID}&redirect_uri=${encodeURIComponent(process.env.NEXT_PUBLIC_WHOOP_REDIRECT_URI || '')}&scope=read:recovery read:sleep read:workout read:profile`}
+                className="flex items-center gap-2 px-4 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded-xl text-cyan-400 hover:bg-cyan-500/30 transition-all text-sm font-medium"
+              >
+                <Zap className="w-4 h-4" />
+                Connect WHOOP
+              </a>
+            )}
+
+            {/* Data Source Indicator */}
+            {data && (
+              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium ${(data as any).source === 'whoop-api' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border border-amber-500/20 text-amber-400'}`}>
+                {(data as any).source === 'whoop-api' ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                {(data as any).source === 'whoop-api' ? 'LIVE' : 'DEMO'}
+              </div>
+            )}
+
             {/* Period Toggle */}
             <div className="flex bg-white/5 rounded-xl p-1 border border-white/5">
               {([30, 60, 90] as const).map(p => (
