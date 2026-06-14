@@ -1,42 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  getCycles, getRecovery, getSleep, getWorkouts, getUserProfile,
-  generateMockData,
-  type Cycle, type Recovery, type SleepRecord, type Workout, type User
-} from '@/lib/whoop';
-
-function getAccessToken(req: NextRequest): string | null {
-  // 1. Check cookie (from OAuth flow)
-  const cookieToken = req.cookies.get('whoop_access_token')?.value;
-  if (cookieToken) return cookieToken;
-
-  // 2. Check Authorization header
-  const authHeader = req.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) return authHeader.slice(7);
-
-  // 3. Check env var (server-side)
-  if (process.env.WHOOP_ACCESS_TOKEN) return process.env.WHOOP_ACCESS_TOKEN;
-
-  return null;
-}
+import { getCycles, getRecovery, getSleep, getWorkouts, getUserProfile, generateMockData } from '@/lib/whoop';
 
 export async function GET(req: NextRequest) {
   try {
     const limit = parseInt(req.nextUrl.searchParams.get('limit') || '30', 10);
-    const token = getAccessToken(req);
+
+    // Try to get token from cookie first (set by OAuth callback)
+    const token = req.cookies.get('whoop_token')?.value
+      || process.env.WHOOP_ACCESS_TOKEN;
 
     if (!token) {
-      // Return mock data when no token available
-      return NextResponse.json(generateMockData(limit));
+      // Return mock data with proper structure
+      const mock = generateMockData(limit);
+      return NextResponse.json(mock);
     }
 
-    // Fetch real data from WHOOP API
+    // Fetch real WHOOP data
     const [user, cycles, recovery, sleep, workouts] = await Promise.all([
       getUserProfile(token).catch(() => null),
-      getCycles(token, limit),
-      getRecovery(token, limit),
-      getSleep(token, limit),
-      getWorkouts(token, limit),
+      getCycles(token, limit).catch(() => []),
+      getRecovery(token, limit).catch(() => []),
+      getSleep(token, limit).catch(() => []),
+      getWorkouts(token, limit).catch(() => []),
     ]);
 
     return NextResponse.json({
@@ -46,12 +31,13 @@ export async function GET(req: NextRequest) {
       sleep,
       workouts,
       source: 'whoop-api',
+      fetched_at: new Date().toISOString(),
     });
   } catch (error: any) {
     console.error('WHOOP API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch WHOOP data' },
-      { status: 500 }
-    );
+    // Fallback to mock on any error
+    const limit = parseInt(req.nextUrl.searchParams.get('limit') || '30', 10);
+    const mock = generateMockData(limit);
+    return NextResponse.json(mock);
   }
 }

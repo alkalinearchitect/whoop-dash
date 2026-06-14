@@ -9,15 +9,24 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const clientId = process.env.NEXT_PUBLIC_WHOOP_CLIENT_ID || process.env.WHOOP_CLIENT_ID;
+    const clientSecret = process.env.WHOOP_CLIENT_SECRET;
+    const redirectUri = process.env.NEXT_PUBLIC_WHOOP_REDIRECT_URI || process.env.WHOOP_REDIRECT_URI;
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      console.error('Missing WHOOP OAuth env vars');
+      return NextResponse.redirect(new URL('/?error=config_error', req.url));
+    }
+
     const tokenRes = await fetch('https://api-7.whoop.com/oauth/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
-        client_id: process.env.WHOOP_CLIENT_ID!,
-        client_secret: process.env.WHOOP_CLIENT_SECRET!,
-        redirect_uri: process.env.WHOOP_REDIRECT_URI!,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
       }),
     });
 
@@ -30,7 +39,7 @@ export async function GET(req: NextRequest) {
     const tokenData = await tokenRes.json();
 
     const response = NextResponse.redirect(new URL('/', req.url));
-    response.cookies.set('whoop_access_token', tokenData.access_token, {
+    response.cookies.set('whoop_token', tokenData.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
