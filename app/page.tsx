@@ -15,7 +15,10 @@ import { StrainZones } from '@/components/StrainZones';
 import { CalendarHeatmap } from '@/components/CalendarHeatmap';
 import { WorkoutCard } from '@/components/WorkoutCard';
 import { SignalsPanel } from '@/components/SignalsPanel';
+import { RecoveryBreakdown } from '@/components/RecoveryBreakdown';
+import { Streaks } from '@/components/Streaks';
 import type { Cycle, Recovery, SleepRecord, Workout, User } from '@/lib/whoop';
+import { generateMockData } from '@/lib/whoop';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -134,11 +137,11 @@ async function fetchWhoopData(limit: number = 30) {
     try {
       const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
       const [userRes, cyclesRes, recoveryRes, sleepRes, workoutsRes] = await Promise.all([
-        fetch('https://api-7.whoop.com/developer/v1/user/profile/basic', { headers }),
-        fetch(`https://api-7.whoop.com/developer/v1/activity/cycle?limit=${limit}&end=${new Date().toISOString()}`, { headers }),
-        fetch(`https://api-7.whoop.com/developer/v1/recovery?limit=${limit}&end=${new Date().toISOString()}`, { headers }),
-        fetch(`https://api-7.whoop.com/developer/v1/activity/sleep?limit=${limit}&end=${new Date().toISOString()}`, { headers }),
-        fetch(`https://api-7.whoop.com/developer/v1/activity/workout?limit=${limit}&end=${new Date().toISOString()}`, { headers }),
+        fetch('https://api.prod.whoop.com/developer/v2/user/profile/basic', { headers }),
+        fetch(`https://api.prod.whoop.com/developer/v2/cycle?limit=${limit}`, { headers }),
+        fetch(`https://api.prod.whoop.com/developer/v2/recovery?limit=${limit}`, { headers }),
+        fetch(`https://api.prod.whoop.com/developer/v2/activity/sleep?limit=${limit}`, { headers }),
+        fetch(`https://api.prod.whoop.com/developer/v2/activity/workout?limit=${limit}`, { headers }),
       ]);
 
       if (userRes.ok && cyclesRes.ok) {
@@ -165,97 +168,6 @@ async function fetchWhoopData(limit: number = 30) {
 
   // Fallback: generate mock data
   return generateMockData(limit);
-}
-
-function generateMockData(limit: number) {
-  const now = new Date();
-  const cycles: any[] = [];
-  const recovery: any[] = [];
-  const sleep: any[] = [];
-  const workouts: any[] = [];
-
-  for (let i = 0; i < limit; i++) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
-
-    const recoveryScore = Math.round((0.4 + Math.random() * 0.55) * 100) / 100;
-    const strain = Math.round((5 + Math.random() * 16) * 10) / 10;
-    const hrv = Math.round(35 + Math.random() * 45);
-    const rhr = Math.round(42 + Math.random() * 18);
-    const spo2 = Math.round((94 + Math.random() * 5) * 10) / 10;
-    const skinTemp = Math.round((32 + Math.random() * 3.5) * 10) / 10;
-    const respRate = Math.round((12 + Math.random() * 6) * 100) / 100;
-    const sleepEff = Math.round((70 + Math.random() * 28) * 100) / 100;
-    const sleepCons = Math.round((60 + Math.random() * 38) * 100) / 100;
-    const sleepPerf = Math.round((50 + Math.random() * 48) * 100) / 100;
-    const inBed = Math.round((6.5 + Math.random() * 2.5) * 3600000);
-    const needed = Math.round((7 + Math.random() * 1.5) * 3600000);
-    const disturbances = Math.floor(Math.random() * 10);
-    const deepSleep = Math.round(inBed * (0.12 + Math.random() * 0.08));
-    const remSleep = Math.round(inBed * (0.18 + Math.random() * 0.1));
-    const lightSleep = Math.round(inBed * (0.45 + Math.random() * 0.1));
-    const awake = inBed - deepSleep - remSleep - lightSleep;
-
-    cycles.push({
-      id: 1000 + i, user_id: 1, start: dateStr + 'T00:00:00.000Z', end: dateStr + 'T23:59:59.000Z',
-      timezone_offset: '+00:00', score_state: 'SCORED',
-      score: { recovery_score: recoveryScore, sleep_performance_percentage: sleepPerf, sleep_consistency_percentage: sleepCons, sleep_efficiency_percentage: sleepEff, strain, kilojoule: Math.round(strain * 200), heart_rate_avg: Math.round(65 + Math.random() * 20), heart_rate_max: Math.round(150 + Math.random() * 30), heart_rate_min: rhr, respiratory_rate: respRate, spo2, skin_temp_celsius: skinTemp, hrv_rmssd: hrv, hrv_sdnn: Math.round(hrv * 1.2), resting_heart_rate: rhr },
-    });
-
-    recovery.push({
-      cycle_id: 1000 + i, sleep_id: 2000 + i, user_id: 1,
-      created_at: dateStr + 'T08:00:00.000Z', updated_at: dateStr + 'T08:00:00.000Z',
-      score_state: 'SCORED',
-      score: { user_calibrating: false, recovery_score: recoveryScore, resting_heart_rate: rhr, hrv_rmssd: hrv, spo2, skin_temp_celsius: skinTemp },
-    });
-
-    sleep.push({
-      id: 2000 + i, user_id: 1, created_at: dateStr + 'T08:00:00.000Z', updated_at: dateStr + 'T08:00:00.000Z',
-      start: dateStr + 'T22:00:00.000Z', end: new Date(date.getTime() + 8 * 3600000).toISOString(),
-      timezone_offset: '+00:00', nap: i % 7 === 0,
-      score_state: 'SCORED',
-      score: {
-        stage_summary: { total_in_bed_time_milli: inBed, total_awake_time_milli: Math.max(0, awake), total_no_data_time_milli: 0, total_light_sleep_time_milli: lightSleep, total_slow_wave_sleep_time_milli: deepSleep, total_rem_sleep_time_milli: remSleep, sleep_cycle_count: 3 + Math.floor(Math.random() * 3), disturbance_count: disturbances },
-        sleep_needed: { baseline_milli: 28800000, need_from_sleep_debt_milli: Math.round(Math.random() * 3600000), need_from_recent_strain_milli: Math.round(strain * 40000), need_from_recent_nap_milli: i % 7 === 0 ? 1800000 : 0 },
-        respiratory_rate: respRate, sleep_performance_percentage: sleepPerf, sleep_consistency_percentage: sleepCons, sleep_efficiency_percentage: sleepEff,
-      },
-    });
-  }
-
-  // Generate workouts (every 2-3 days)
-  const sportIds = [1, 5, 10, 43, 54, 71, 165, 185, 213, 357, 493];
-  for (let i = 0; i < limit; i += 2 + Math.floor(Math.random() * 2)) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const strain = Math.round((5 + Math.random() * 14) * 10) / 10;
-    const avgHR = Math.round(110 + Math.random() * 40);
-    const maxHR = avgHR + Math.round(20 + Math.random() * 20);
-    const duration = 20 + Math.floor(Math.random() * 50);
-    const zones = {
-      zone_zero_milli: duration * 60000 * 0.1,
-      zone_one_milli: duration * 60000 * 0.15,
-      zone_two_milli: duration * 60000 * 0.25,
-      zone_three_milli: duration * 60000 * 0.25,
-      zone_four_milli: duration * 60000 * 0.15,
-      zone_five_milli: duration * 60000 * 0.1,
-    };
-
-    workouts.push({
-      id: 3000 + i, user_id: 1, created_at: date.toISOString(), updated_at: date.toISOString(),
-      start: date.toISOString(), end: new Date(date.getTime() + duration * 60000).toISOString(),
-      timezone_offset: '+00:00', sport_id: sportIds[Math.floor(Math.random() * sportIds.length)],
-      score_state: 'SCORED',
-      score: { strain, kilojoule: Math.round(strain * 180), average_heart_rate: avgHR, max_heart_rate: maxHR, percent_recorded: 100, distance_meter: Math.round(strain * 500), altitude_gain_meter: Math.round(Math.random() * 150), altitude_change_meter: Math.round(Math.random() * 300), zone_duration: zones },
-    });
-  }
-
-  return {
-    user: { user_id: 1, email: 'athlete@whoop.com', first_name: 'Demo', last_name: 'Athlete' },
-    cycles, recovery, sleep, workouts,
-    source: 'mock',
-    fetched_at: new Date().toISOString(),
-  };
 }
 
 // ── Streak Computation ───────────────────────────────────────────────────────
@@ -314,7 +226,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const sleepStreak = computeStreak(data.sleep, (s: any) => sleepEfficiency(s), 85);
   const isLive = data.source === 'whoop-api';
 
-  const oauthUrl = `https://api-7.whoop.com/oauth/oauth2/auth?response_type=code&client_id=${process.env.NEXT_PUBLIC_WHOOP_CLIENT_ID || ''}&redirect_uri=${encodeURIComponent(process.env.NEXT_PUBLIC_WHOOP_REDIRECT_URI || '')}&scope=read:recovery read:sleep read:workout read:profile`;
+  // Generate random state for CSRF protection
+  const state = Math.random().toString(36).substring(2, 15);
+  const oauthUrl = `https://api.prod.whoop.com/oauth/oauth2/auth?response_type=code&client_id=${process.env.NEXT_PUBLIC_WHOOP_CLIENT_ID || ''}&redirect_uri=${process.env.NEXT_PUBLIC_WHOOP_REDIRECT_URI || ''}&scope=read:recovery%20read:cycles%20read:sleep%20read:workout%20read:profile&state=${state}`
 
   const TABS = [
     { id: 'overview' as const, label: 'Overview', labelShort: 'Home', icon: BarChart3 },
@@ -378,9 +292,17 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               )}
             </div>
 
-            <a href="/" className="md:hidden p-2 rounded-xl bg-white/5 border border-white/10 active:scale-95">
-              <RefreshCw className="w-5 h-5 text-zinc-400" />
-            </a>
+            {!isLive && (
+              <a href={oauthUrl} className="md:hidden flex items-center gap-2 px-3 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded-xl text-cyan-400 hover:bg-cyan-500/30 transition-all text-xs font-medium active:scale-95">
+                <Zap className="w-3 h-3" />
+                Connect WHOOP
+              </a>
+            )}
+            {isLive && (
+              <a href="/" className="md:hidden p-2 rounded-xl bg-white/5 border border-white/10 active:scale-95">
+                <RefreshCw className="w-5 h-5 text-zinc-400" />
+              </a>
+            )}
           </div>
         </div>
       </header>
@@ -460,24 +382,49 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                     const needed = sleepNeeded(s);
                     const actual = sleepInBed(s);
                     const perf = sleepPerformance(s);
+                    const baseline = s?.score?.sleep_needed?.baseline_milli ?? needed;
+                    const debt = s?.score?.sleep_needed?.need_from_sleep_debt_milli ?? 0;
+                    const strainNeed = s?.score?.sleep_needed?.need_from_recent_strain_milli ?? 0;
+                    const napNeed = s?.score?.sleep_needed?.need_from_recent_nap_milli ?? 0;
+                    const totalNeeded = baseline + debt + strainNeed + napNeed;
+                    const deficit = actual - totalNeeded;
                     return (
-                      <div key={i} className="flex items-center gap-2 sm:gap-4 p-2 sm:p-3 bg-white/[0.02] rounded-xl border border-white/5">
-                        <span className="text-[10px] sm:text-xs text-zinc-500 w-16 sm:w-20 flex-shrink-0">{formatDate(s.start)}</span>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[10px] sm:text-xs text-zinc-400">Need: {formatDuration(needed)}</span>
-                            <span className="text-[10px] sm:text-xs text-zinc-400">Got: {formatDuration(actual)}</span>
-                          </div>
-                          <div className="h-1.5 sm:h-2 bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(perf, 100)}%`, background: perf >= 85 ? 'linear-gradient(90deg, #6366f1, #a78bfa)' : perf >= 60 ? 'linear-gradient(90deg, #f59e0b, #f97316)' : 'linear-gradient(90deg, #ef4444, #f97316)' }} />
-                          </div>
+                      <div key={i} className="p-3 sm:p-4 bg-white/[0.02] rounded-xl border border-white/5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] sm:text-xs text-zinc-500 font-medium">{formatDate(s.start)}</span>
+                          <span className={`text-xs sm:text-sm font-semibold ${perf >= 85 ? 'text-indigo-400' : perf >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
+                            {perf}%
+                          </span>
                         </div>
-                        <span className={`text-xs sm:text-sm font-semibold flex-shrink-0 ${perf >= 85 ? 'text-indigo-400' : perf >= 60 ? 'text-amber-400' : 'text-red-400'}`}>
-                          {perf}%
-                        </span>
+                        {/* Stacked need bar */}
+                        <div className="h-3 sm:h-4 bg-white/5 rounded-full overflow-hidden flex mb-2">
+                          <div className="h-full bg-indigo-500/60 transition-all duration-700" style={{ width: `${(baseline / totalNeeded) * 100}%` }} title={`Baseline: ${formatDuration(baseline)}`} />
+                          {debt > 0 && <div className="h-full bg-red-500/50 transition-all duration-700" style={{ width: `${(debt / totalNeeded) * 100}%` }} title={`Sleep debt: ${formatDuration(debt)}`} />}
+                          {strainNeed > 0 && <div className="h-full bg-amber-500/50 transition-all duration-700" style={{ width: `${(strainNeed / totalNeeded) * 100}%` }} title={`Strain: ${formatDuration(strainNeed)}`} />}
+                          {napNeed > 0 && <div className="h-full bg-purple-500/50 transition-all duration-700" style={{ width: `${(napNeed / totalNeeded) * 100}%` }} title={`Nap: ${formatDuration(napNeed)}`} />}
+                        </div>
+                        {/* Actual sleep overlay */}
+                        <div className="relative h-1 bg-white/5 rounded-full mb-2">
+                          <div className="absolute h-2 -top-0.5 rounded-full bg-white/80 transition-all duration-700" style={{ width: `${Math.min((actual / totalNeeded) * 100, 100)}%` }} />
+                        </div>
+                        <div className="flex items-center justify-between text-[9px] sm:text-[10px]">
+                          <div className="flex gap-2 sm:gap-3">
+                            <span className="text-zinc-500" title="Baseline need"><span className="inline-block w-2 h-2 rounded-sm bg-indigo-500/60 mr-1" />Need: {formatDuration(totalNeeded)}</span>
+                          </div>
+                          <span className={`font-medium ${deficit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{deficit >= 0 ? '+' : ''}{formatDuration(Math.abs(deficit))} {deficit >= 0 ? 'surplus' : 'deficit'}</span>
+                          <span className="text-zinc-500">Got: {formatDuration(actual)}</span>
+                        </div>
                       </div>
                     );
                   })}
+                </div>
+                {/* Legend */}
+                <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-white/5">
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-indigo-500/60" /><span className="text-[9px] text-zinc-500">Baseline</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-red-500/50" /><span className="text-[9px] text-zinc-500">Sleep Debt</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-amber-500/50" /><span className="text-[9px] text-zinc-500">Strain</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-sm bg-purple-500/50" /><span className="text-[9px] text-zinc-500">Nap</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 rounded-full bg-white/80" /><span className="text-[9px] text-zinc-500">Actual</span></div>
                 </div>
               </div>
 
@@ -499,6 +446,19 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* Recovery Breakdown + Streaks */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+              <RecoveryBreakdown
+                recovery={data?.recovery?.[0] ?? null}
+                sleepPerformance={data?.sleep?.[0] ? sleepPerformance(data.sleep[0]) : null}
+              />
+              <Streaks
+                cycles={data?.cycles}
+                recovery={data?.recovery}
+                sleep={data?.sleep}
+              />
             </div>
 
             {/* Signals + Heatmap */}
@@ -556,6 +516,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 <div className="h-48 sm:h-64">
                   <TrendChart
                     data={data?.cycles?.slice(0, selectedPeriod).reverse().map((c: any) => ({ date: formatDate(c.start), value: cycleStrain(c) })) || []}
+                    dataKey="value"
                     color="#f59e0b"
                     label="Strain"
                   />
@@ -584,25 +545,25 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <div className="glass-card p-4 sm:p-6">
                 <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">HRV Trend (ms)</h3>
                 <div className="h-48 sm:h-64">
-                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoveryHRV(r) })) || []} color="#06b6d4" label="HRV" />
+                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoveryHRV(r) })) || []} color="#06b6d4" label="HRV" dataKey="value" />
                 </div>
               </div>
               <div className="glass-card p-4 sm:p-6">
                 <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">Resting Heart Rate (bpm)</h3>
                 <div className="h-48 sm:h-64">
-                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoveryRHR(r) })) || []} color="#ef4444" label="RHR" />
+                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoveryRHR(r) })) || []} color="#ef4444" label="RHR" dataKey="value" />
                 </div>
               </div>
               <div className="glass-card p-4 sm:p-6">
                 <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">SpO2 Trend (%)</h3>
                 <div className="h-48 sm:h-64">
-                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoverySpO2(r) })) || []} color="#10b981" label="SpO2" />
+                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoverySpO2(r) })) || []} color="#10b981" label="SpO2" dataKey="value" />
                 </div>
               </div>
               <div className="glass-card p-4 sm:p-6">
                 <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">Respiratory Rate (brpm)</h3>
                 <div className="h-48 sm:h-64">
-                  <TrendChart data={data?.sleep?.slice(0, selectedPeriod).reverse().map((s: any) => ({ date: formatDate(s.start), value: sleepRespiratoryRate(s) })) || []} color="#8b5cf6" label="Resp Rate" />
+                  <TrendChart data={data?.sleep?.slice(0, selectedPeriod).reverse().map((s: any) => ({ date: formatDate(s.start), value: sleepRespiratoryRate(s) })) || []} color="#8b5cf6" label="Resp Rate" dataKey="value" />
                 </div>
               </div>
             </div>
@@ -610,7 +571,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <div className="glass-card p-4 sm:p-6">
               <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">Recovery Score Trend</h3>
               <div className="h-48 sm:h-64">
-                <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoveryScore(r) })) || []} color="#06b6d4" label="Recovery" />
+                <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoveryScore(r) })) || []} color="#06b6d4" label="Recovery" dataKey="value" />
               </div>
             </div>
           </div>

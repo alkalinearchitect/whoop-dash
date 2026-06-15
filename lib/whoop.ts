@@ -1,11 +1,11 @@
 // WHOOP API v2 — Data Layer
 // Base URL: https://api.whoop.com/v2
-// Auth: Bearer <_REDACTED> token (OAuth2)
+// Auth: Bearer <token> via OAuth2
 //
 // WHOOP returns many scores as 0–1 floats; multiply by 100 for percentages.
 // Recovery scores come from sleep.performance_percentage * 100.
 
-const BASE_URL = "https://api.whoop.com/v2";
+const BASE_URL = "https://api.prod.whoop.com/developer/v2";
 
 // ---------------------------------------------------------------------------
 // Pagination response wrapper
@@ -256,9 +256,9 @@ export class WhoopAPI {
     return this.fetchAll<Recovery>("/recovery", {}, limit);
   }
 
-  /** GET /sleep — returns `limit` most-recent sleep records. */
+  /** GET /activity/sleep — returns `limit` most-recent sleep records. */
   async getSleepRecords(limit = 30): Promise<SleepRecord[]> {
-    return this.fetchAll<SleepRecord>("/sleep", {}, limit);
+    return this.fetchAll<SleepRecord>("/activity/sleep", {}, limit);
   }
 
   /** GET /activity/workout — returns `limit` most-recent workouts. */
