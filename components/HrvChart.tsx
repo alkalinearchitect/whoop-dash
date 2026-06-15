@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import { Dumbbell, Moon, Zap, TrendingUp, TrendingDown } from "lucide-react";
 import type { Recovery, Workout, SleepRecord } from "../lib/whoop";
+import { pct } from "../lib/utils";
 
 interface HrvChartProps {
   recovery: Recovery[];
@@ -24,11 +25,6 @@ interface ChartPoint {
   poorSleep: boolean;
   sleepPerf: number;
   isNap: boolean;
-}
-
-function pct(val: number | null | undefined): number | null {
-  if (val == null) return null;
-  return val <= 1 ? Math.round(val * 100) : Math.round(val);
 }
 
 export function HrvChart({ recovery, workouts, sleep, loading }: HrvChartProps) {

@@ -2,21 +2,13 @@
 
 import { useMemo } from "react";
 import { Heart, Activity, Moon } from "lucide-react";
+import type { Recovery } from "../lib/whoop";
+import { pct } from "../lib/utils";
 
 interface RecoveryBreakdownProps {
-  recovery: {
-    score?: { recovery_score?: number | null; hrv_rmssd?: number | null; resting_heart_rate?: number | null } | null;
-    recovery_score?: number | null;
-    hrv_rmssd?: number | null;
-    resting_heart_rate?: number | null;
-  } | null;
+  recovery: Recovery | null;
   sleepPerformance?: number | null;
   loading?: boolean;
-}
-
-function pct(val: number | null | undefined): number {
-  if (val == null) return 0;
-  return val <= 1 ? Math.round(val * 100) : Math.round(val);
 }
 
 interface BreakdownBar {
@@ -59,11 +51,11 @@ export function RecoveryBreakdown({ recovery, sleepPerformance, loading }: Recov
   const bars: BreakdownBar[] = useMemo(() => {
     if (!recovery) return [];
 
-    const hrv = recovery.score?.hrv_rmssd ?? recovery.hrv_rmssd ?? 0;
-    const rhr = recovery.score?.resting_heart_rate ?? recovery.resting_heart_rate ?? 0;
+    const hrv = recovery.score?.hrv_rmssd ?? 0;
+    const rhr = recovery.score?.resting_heart_rate ?? 0;
     const hrvStatus = getHRVStatus(hrv);
     const rhrStatus = getRHRStatus(rhr);
-    const sleepPerf = sleepPerformance ?? (recovery.score?.recovery_score != null ? pct(recovery.score.recovery_score) : recovery.recovery_score != null ? pct(recovery.recovery_score) : 0);
+    const sleepPerf = sleepPerformance ?? (recovery.score?.recovery_score != null ? pct(recovery.score.recovery_score) : null) ?? 0;
     const sleepStatus = getSleepStatus(sleepPerf <= 1 ? sleepPerf * 100 : sleepPerf);
 
     return [

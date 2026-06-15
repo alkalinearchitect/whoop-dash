@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Flame, Moon, Target, Zap } from "lucide-react";
 import type { Cycle, Recovery, SleepRecord } from "../lib/whoop";
+import { pct, computeStreak } from "../lib/dashboard-utils";
 
 interface StreaksProps {
   cycles?: Cycle[];
@@ -19,22 +20,6 @@ interface StreakData {
   color: string;
   bgColor: string;
   threshold: string;
-}
-
-function pct(val: number | null | undefined): number | null {
-  if (val == null) return null;
-  return val <= 1 ? Math.round(val * 100) : Math.round(val);
-}
-
-function computeStreak(items: any[], getter: (item: any) => number, threshold: number, above = true): number {
-  let streak = 0;
-  for (const item of items) {
-    const val = getter(item);
-    if (val === 0) break;
-    if (above ? val >= threshold : val <= threshold) streak++;
-    else break;
-  }
-  return streak;
 }
 
 export function Streaks({ cycles, recovery, sleep, loading }: StreaksProps) {

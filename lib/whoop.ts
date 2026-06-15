@@ -415,5 +415,6 @@ export function generateMockData(limit: number) {
     user: { user_id: 1, email: 'demo@whoop.com', first_name: 'Demo', last_name: 'Athlete' },
     cycles, recovery, sleep, workouts,
     source: 'mock',
+    fetched_at: new Date().toISOString(),
   };
 }
