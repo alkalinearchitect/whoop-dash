@@ -334,10 +334,46 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               </div>
 
               <div className="grid grid-cols-2 gap-2 sm:gap-3 sm:col-span-2 lg:col-span-1">
-                <MetricCard label="HRV" value={safeNum(data?.recovery[0] ? recoveryHRV(data.recovery[0]) : 0)} unit="ms" icon={<Heart className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#06b6d4" trend="stable" />
-                <MetricCard label="RHR" value={safeNum(data?.recovery[0] ? recoveryRHR(data.recovery[0]) : 0)} unit="bpm" icon={<Activity className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#ef4444" trend="stable" />
-                <MetricCard label="SpO2" value={safeNum(data?.recovery[0] ? recoverySpO2(data.recovery[0]) : 0)} unit="%" icon={<Droplets className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#10b981" trend="stable" />
-                <MetricCard label="Resp Rate" value={safeNum(data?.sleep[0] ? sleepRespiratoryRate(data.sleep[0]) : 0, 1)} unit="brpm" icon={<Wind className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#8b5cf6" trend="stable" />
+                <MetricCard
+                  label="HRV"
+                  value={safeNum(data?.recovery[0] ? recoveryHRV(data.recovery[0]) : 0)}
+                  unit="ms"
+                  icon={<Heart className="w-3 h-3 sm:w-4 sm:h-4" />}
+                  accentColor="#06b6d4"
+                  trend="stable"
+                  explanation="Heart Rate Variability reflects your autonomic nervous system resilience. Higher HRV = better recovery capacity."
+                  detail={<div className="space-y-2 text-[11px] text-white/50"><p>• <strong className="text-white/60">Optimal:</strong> 50+ ms — strong parasympathetic tone</p><p>• <strong className="text-white/60">Moderate:</strong> 30-49 ms — adequate recovery</p><p>• <strong className="text-white/60">Low:</strong> Below 30 ms — stress or fatigue detected</p><p className="text-white/30 mt-2">WHOOP tracks HRV during sleep. Daily fluctuations are normal — watch the 7-day trend.</p></div>}
+                />
+                <MetricCard
+                  label="Resting HR"
+                  value={safeNum(data?.recovery[0] ? recoveryRHR(data.recovery[0]) : 0)}
+                  unit="bpm"
+                  icon={<Activity className="w-3 h-3 sm:w-4 sm:h-4" />}
+                  accentColor="#ef4444"
+                  trend="stable"
+                  explanation="Resting Heart Rate is a key indicator of cardiovascular fitness and recovery. Lower is generally better for trained athletes."
+                  detail={<div className="space-y-2 text-[11px] text-white/50"><p>• <strong className="text-white/60">Athletic range:</strong> 40-55 bpm</p><p>• <strong className="text-white/60">Average adult:</strong> 60-80 bpm</p><p>• <strong className="text-white/60">Elevated:</strong> 80+ bpm — possible stress, dehydration, or illness</p><p className="text-white/30 mt-2">RHR spikes when your body is fighting something or hasn't recovered from yesterday's strain.</p></div>}
+                />
+                <MetricCard
+                  label="SpO2"
+                  value={safeNum(data?.recovery[0] ? recoverySpO2(data.recovery[0]) : 0)}
+                  unit="%"
+                  icon={<Droplets className="w-3 h-3 sm:w-4 sm:h-4" />}
+                  accentColor="#10b981"
+                  trend="stable"
+                  explanation="Blood oxygen saturation shows how well your body oxygenates during sleep. Healthy levels are 95-100%."
+                  detail={<div className="space-y-2 text-[11px] text-white/50"><p>• <strong className="text-white/60">Normal:</strong> 95-100%</p><p>• <strong className="text-white/60">Mild dips:</strong> 90-94% — monitor, consult if persistent</p><p>• <strong className="text-white/60">Concerning:</strong> Below 90% — seek medical advice</p><p className="text-white/30 mt-2">WHOOP measures SpO2 during sleep. Altitude, sleep apnea, and congestion can cause temporary drops.</p></div>}
+                />
+                <MetricCard
+                  label="Resp Rate"
+                  value={safeNum(data?.sleep[0] ? sleepRespiratoryRate(data.sleep[0]) : 0, 1)}
+                  unit="brpm"
+                  icon={<Wind className="w-3 h-3 sm:w-4 sm:h-4" />}
+                  accentColor="#8b5cf6"
+                  trend="stable"
+                  explanation="Respiratory rate during sleep. Lower, steadier breathing indicates deeper recovery and parasympathetic dominance."
+                  detail={<div className="space-y-2 text-[11px] text-white/50"><p>• <strong className="text-white/60">Restful range:</strong> 12-16 breaths/min</p><p>• <strong className="text-white/60">Elevated:</strong> 18+ breaths/min — stress, alcohol, or illness</p><p>• <strong className="text-white/60">Athletes:</strong> Often 10-14 breaths/min</p><p className="text-white/30 mt-2">Alcohol and late meals spike respiratory rate. Track it to find your optimal evening routine.</p></div>}
+                />
               </div>
             </div>
 
@@ -444,10 +480,46 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         {activeTab === 'sleep' && (
           <div className="space-y-4 sm:space-y-6 animate-fade-in-up">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <MetricCard label="Avg Efficiency" value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepEfficiency(s), 0) / data.sleep.length) : 0)} unit="%" icon={<Moon className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#6366f1" trend="stable" />
-              <MetricCard label="Avg Consistency" value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepConsistency(s), 0) / data.sleep.length) : 0)} unit="%" icon={<Target className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#8b5cf6" trend="stable" />
-              <MetricCard label="Avg Time in Bed" value={data?.sleep?.length ? formatDuration(Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepInBed(s), 0) / data.sleep.length)) : '—'} unit="" icon={<Timer className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#06b6d4" trend="stable" />
-              <MetricCard label="Avg Disturbances" value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepDisturbances(s), 0) / data.sleep.length) : 0)} unit="" icon={<AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#f59e0b" trend="stable" />
+              <MetricCard
+                label="Avg Efficiency"
+                value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepEfficiency(s), 0) / data.sleep.length) : 0)}
+                unit="%"
+                icon={<Moon className="w-3 h-3 sm:w-4 sm:h-4" />}
+                accentColor="#6366f1"
+                trend="stable"
+                explanation="Percentage of time in bed actually spent sleeping. Above 85% is considered healthy."
+                detail={<div className="space-y-2 text-[11px] text-white/50"><p>• <strong className="text-white/60">Excellent:</strong> 90%+</p><p>• <strong className="text-white/60">Good:</strong> 85-89%</p><p>• <strong className="text-white/60">Needs work:</strong> Below 85%</p><p className="text-white/30 mt-2">WHOOP calculates this from your sleep stages. Room temperature, alcohol, and late caffeine all impact efficiency.</p></div>}
+              />
+              <MetricCard
+                label="Avg Consistency"
+                value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepConsistency(s), 0) / data.sleep.length) : 0)}
+                unit="%"
+                icon={<Target className="w-3 h-3 sm:w-4 sm:h-4" />}
+                accentColor="#8b5cf6"
+                trend="stable"
+                explanation="How consistent your sleep/wake times are. Going to bed and waking at the same time daily improves sleep quality."
+                detail={<div className="space-y-2 text-[11px] text-white/50"><p>• <strong className="text-white/60">Goal:</strong> Within 30 min of your average bedtime</p><p>• <strong className="text-white/60">Weekend drift:</strong> Jet-lagging yourself hurts Monday performance</p><p>• <strong className="text-white/60">Consistency &gt; duration:</strong> Regular 6h beats erratic 8h</p><p className="text-white/30 mt-2">Set a WHOOP bedtime reminder to build the habit. Your circadian rhythm will thank you.</p></div>}
+              />
+              <MetricCard
+                label="Avg Time in Bed"
+                value={data?.sleep?.length ? formatDuration(Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepInBed(s), 0) / data.sleep.length)) : '—'}
+                unit=""
+                icon={<Timer className="w-3 h-3 sm:w-4 sm:h-4" />}
+                accentColor="#06b6d4"
+                trend="stable"
+                explanation="Total time spent in bed. Includes awakenings — your actual sleep time will be lower."
+                detail={<div className="space-y-2 text-[11px] text-white/50"><p>• <strong className="text-white/60">Recommended:</strong> 7-9 hours for adults</p><p>• <strong className="text-white/60">Athletes may need:</strong> 8-10 hours</p><p>• <strong className="text-white/60">Sleep debt:</strong> Catch up with 30-60 min earlier bedtime</p><p className="text-white/30 mt-2">Compare this to your sleep need from WHOOP to see if you're getting enough recovery time.</p></div>}
+              />
+              <MetricCard
+                label="Avg Disturbances"
+                value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepDisturbances(s), 0) / data.sleep.length) : 0)}
+                unit=""
+                icon={<AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />}
+                accentColor="#f59e0b"
+                trend="stable"
+                explanation="Number of times your sleep was disturbed. Lower is better — frequent disruptions fragment your sleep cycles."
+                detail={<div className="space-y-2 text-[11px] text-white/50"><p>• <strong className="text-white/60">Normal:</strong> 3-6 per night</p><p>• <strong className="text-white/60">Frequent:</strong> 8+ per night — investigate causes</p>• <strong className="text-white/60">Common triggers:</strong> Noise, temperature, alcohol, sleep apnea<p className="text-white/30 mt-2">If disturbances are high but you don't remember waking, your body may be stressed even if your mind stays asleep.</p></div>}
+              />
             </div>
 
             <Hypnogram sleeps={data?.sleep || []} />
