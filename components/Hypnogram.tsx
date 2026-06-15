@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -9,19 +9,18 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-  ReferenceLine,
 } from "recharts";
-import type { SleepRecord } from "../lib/whoop";
+import { Moon } from "lucide-react";
+import type { WhoopSleep as SleepRecord } from "../lib/whoop";
 
 interface HypnogramProps {
   sleeps: SleepRecord[];
   loading?: boolean;
+  explanation?: string;
 }
 
 interface SleepStageData {
   date: string;
-  startTime: string;
-  endTime: string;
   deep: number;
   rem: number;
   light: number;
@@ -31,8 +30,6 @@ interface SleepStageData {
   lightMs: number;
   awakeMs: number;
   totalMs: number;
-  efficiency: number | null;
-  disturbances: number;
 }
 
 const STAGE_CONFIG = [
@@ -49,14 +46,7 @@ function formatDuration(ms: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
-}
-
-export function Hypnogram({ sleeps, loading }: HypnogramProps) {
-  const [selectedNight, setSelectedNight] = useState<number | null>(null);
-
+export function Hypnogram({ sleeps, loading, explanation = "Sleep stages show recovery quality. Deep + REM = physical + mental recovery." }: HypnogramProps) {
   const nights = useMemo(() => {
     const res = sleeps
       .filter((s) => !s.nap && s.score?.stage_summary)
@@ -81,10 +71,6 @@ export function Hypnogram({ sleeps, loading }: HypnogramProps) {
           lightMs: stage.total_light_sleep_time_milli,
           awakeMs: stage.total_awake_time_milli,
           totalMs: total,
-          efficiency: s.score?.sleep_efficiency_percentage ?? null,
-          disturbances: stage.disturbance_count ?? 0,
-          startTime: formatTime(s.start),
-          endTime: formatTime(s.end),
         };
       });
     return res;
@@ -92,8 +78,7 @@ export function Hypnogram({ sleeps, loading }: HypnogramProps) {
 
   if (loading) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-xl">
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" />
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-xl">
         <div className="h-8 w-48 rounded-lg bg-white/[0.06] mb-4" />
         <div className="h-64 rounded-xl bg-white/[0.04]" />
       </div>
@@ -105,7 +90,7 @@ export function Hypnogram({ sleeps, loading }: HypnogramProps) {
       <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 backdrop-blur-xl">
         <div className="text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.04]">
-            <span className="text-xl">🌙</span>
+            <Moon className="h-5 w-5 text-white/30" />
           </div>
           <p className="text-sm font-medium text-white/60">No sleep data available</p>
           <p className="mt-1 text-xs text-white/30">Sleep records will appear here once synced</p>
@@ -116,26 +101,26 @@ export function Hypnogram({ sleeps, loading }: HypnogramProps) {
 
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-xl">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-white/90">Sleep Architecture</h3>
-          <p className="mt-0.5 text-xs text-white/40">Last {nights.length} nights · Stage distribution</p>
-        </div>
-        <div className="flex gap-4">
-          {STAGE_CONFIG.map((stage) => (
-            <div key={stage.key} className="flex items-center gap-1.5">
-              <div
-                className="h-2.5 w-2.5 rounded-sm"
-                style={{ backgroundColor: stage.color }}
-              />
-              <span className="text-[10px] font-medium text-white/50">{stage.label}</span>
-            </div>
-          ))}
-        </div>
+      <div className="mb-6">
+        <h3 className="text-sm font-semibold text-white/90">Sleep Architecture</h3>
+        <p className="mt-0.5 text-xs text-white/40">Last {nights.length} nights</p>
+        {explanation && (
+          <p className="mt-1 text-[11px] text-white/35">{explanation}</p>
+        )}
       </div>
 
-      {/* Stacked Bar Chart */}
+      <div className="mb-4 flex gap-4">
+        {STAGE_CONFIG.map((stage) => (
+          <div key={stage.key} className="flex items-center gap-1.5">
+            <div
+              className="h-2.5 w-2.5 rounded-sm"
+              style={{ backgroundColor: stage.color }}
+            />
+            <span className="text-[10px] font-medium text-white/50">{stage.label}</span>
+          </div>
+        ))}
+      </div>
+
       <div className="mb-4 h-64">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -178,62 +163,34 @@ export function Hypnogram({ sleeps, loading }: HypnogramProps) {
                         </div>
                       ))}
                     </div>
-                    <div className="mt-2 border-t border-white/10 pt-2 text-[10px] text-white/40">
-                      {data.startTime} → {data.endTime} · {data.efficiency ?? "—"}% efficiency
-                    </div>
                   </div>
                 );
               }}
             />
-            <Bar
-              dataKey="deep"
-              stackId="stages"
-              radius={[0, 0, 0, 0]}
-              cursor="pointer"
-              onClick={(_, index) => setSelectedNight(index === selectedNight ? null : index)}
-            >
+            <Bar dataKey="deep" stackId="stages" radius={[0, 0, 0, 0]}>
               {nights.map((_, index) => (
-                <Cell
-                  key={`deep-${index}`}
-                  fill={STAGE_CONFIG[0].color}
-                  fillOpacity={selectedNight === null || selectedNight === index ? 1 : 0.4}
-                  stroke={selectedNight === index ? "rgba(255,255,255,0.3)" : "transparent"}
-                  strokeWidth={2}
-                />
+                <Cell key={`deep-${index}`} fill={STAGE_CONFIG[0].color} />
               ))}
             </Bar>
             <Bar dataKey="rem" stackId="stages" radius={[0, 0, 0, 0]}>
               {nights.map((_, index) => (
-                <Cell
-                  key={`rem-${index}`}
-                  fill={STAGE_CONFIG[1].color}
-                  fillOpacity={selectedNight === null || selectedNight === index ? 1 : 0.4}
-                />
+                <Cell key={`rem-${index}`} fill={STAGE_CONFIG[1].color} />
               ))}
             </Bar>
             <Bar dataKey="light" stackId="stages" radius={[0, 0, 0, 0]}>
               {nights.map((_, index) => (
-                <Cell
-                  key={`light-${index}`}
-                  fill={STAGE_CONFIG[2].color}
-                  fillOpacity={selectedNight === null || selectedNight === index ? 1 : 0.4}
-                />
+                <Cell key={`light-${index}`} fill={STAGE_CONFIG[2].color} />
               ))}
             </Bar>
             <Bar dataKey="awake" stackId="stages" radius={[4, 4, 0, 0]}>
               {nights.map((_, index) => (
-                <Cell
-                  key={`awake-${index}`}
-                  fill={STAGE_CONFIG[3].color}
-                  fillOpacity={selectedNight === null || selectedNight === index ? 1 : 0.4}
-                />
+                <Cell key={`awake-${index}`} fill={STAGE_CONFIG[3].color} />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Duration labels row */}
       <div className="flex items-center justify-between border-t border-white/[0.04] pt-3">
         <div className="flex gap-6">
           {STAGE_CONFIG.map((stage) => {
@@ -260,57 +217,6 @@ export function Hypnogram({ sleeps, loading }: HypnogramProps) {
           </p>
         </div>
       </div>
-
-      {/* Selected night detail */}
-      {selectedNight !== null && nights[selectedNight] && (
-        <div className="mt-4 rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-white/70">
-              {nights[selectedNight].date}
-            </h4>
-            <button
-              onClick={() => setSelectedNight(null)}
-              className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
-            >
-              ✕ Close
-            </button>
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-[9px] uppercase tracking-wider text-white/30">Sleep Time</p>
-              <p className="text-sm font-semibold text-white/80">
-                {formatDuration(nights[selectedNight].totalMs - nights[selectedNight].awakeMs)}
-              </p>
-            </div>
-            <div>
-              <p className="text-[9px] uppercase tracking-wider text-white/30">Efficiency</p>
-              <p className="text-sm font-semibold text-white/80">
-                {nights[selectedNight].efficiency ?? "—"}%
-              </p>
-            </div>
-            <div>
-              <p className="text-[9px] uppercase tracking-wider text-white/30">Disturbances</p>
-              <p className="text-sm font-semibold text-white/80">
-                {nights[selectedNight].disturbances}
-              </p>
-            </div>
-          </div>
-          {/* Mini stage bar */}
-          <div className="mt-3 flex h-3 overflow-hidden rounded-full">
-            {STAGE_CONFIG.map((stage) => (
-              <div
-                key={stage.key}
-                className="h-full transition-all duration-300"
-                style={{
-                  width: `${nights[selectedNight][stage.key]}%`,
-                  backgroundColor: stage.color,
-                }}
-                title={`${stage.label}: ${formatDuration(nights[selectedNight][`${stage.key}Ms`])}`}
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

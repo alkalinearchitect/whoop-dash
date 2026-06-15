@@ -1,257 +1,141 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Cycle } from "../lib/whoop";
+import type { WhoopRecovery } from "../lib/whoop";
 
 interface CalendarHeatmapProps {
-  cycles: Cycle[];
+  recovery: WhoopRecovery[];
+  explanation: string;
   loading?: boolean;
 }
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
-function getColor(score: number | null): string {
+function cellColor(score: number | null) {
   if (score === null) return "rgba(255,255,255,0.03)";
   if (score >= 66) return "#22c55e";
-  if (score >= 55) return "#84cc16";
-  if (score >= 44) return "#eab308";
-  if (score >= 33) return "#f97316";
+  if (score >= 33) return "#eab308";
   return "#ef4444";
 }
 
-function getIntensity(score: number | null): number {
+function cellOpacity(score: number | null) {
   if (score === null) return 0.08;
   if (score >= 66) return 1;
-  if (score >= 55) return 0.8;
-  if (score >= 44) return 0.6;
-  if (score >= 33) return 0.4;
-  return 0.25;
+  if (score >= 33) return 0.6;
+  return 0.35;
 }
 
-export function CalendarHeatmap({ cycles, loading }: CalendarHeatmapProps) {
-  const [hoveredDay, setHoveredDay] = useState<{
-    date: string;
-    score: number | null;
-    x: number;
-    y: number;
-  } | null>(null);
+export function CalendarHeatmap({ recovery, explanation, loading = false }: CalendarHeatmapProps) {
+  const [hovered, setHovered] = useState<{ date: string; score: number | null; x: number; y: number } | null>(null);
 
-  const { weeks, monthLabels, stats } = useMemo(() => {
+  const { weeks, stats } = useMemo(() => {
     const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - 89); // 90 days
-    // Align to Sunday
-    startDate.setDate(startDate.getDate() - startDate.getDay());
+    const start = new Date(today);
+    start.setDate(start.getDate() - 48); // 7 weeks minus 1 day
+    start.setDate(start.getDate() - start.getDay()); // align to Sunday
 
-    const cycleMap = new Map<string, number>();
-    cycles.forEach((c) => {
-      const date = new Date(c.end);
-      const key = date.toISOString().split("T")[0];
-      const score = c.score?.recovery_score;
-      if (score !== null && score !== undefined) {
-        // WHOOP returns recovery_score as 0-1 float, convert to percentage
-        cycleMap.set(key, score <= 1 ? Math.round(score * 100) : Math.round(score));
-      }
+    const map = new Map<string, number>();
+    recovery.forEach(r => {
+      const key = new Date(r.created_at).toISOString().split("T")[0];
+      const s = r.score?.recovery_score;
+      if (s != null) map.set(key, s <= 1 ? Math.round(s * 100) : Math.round(s));
     });
 
-    const weekData: { date: string; score: number | null; day: number }[][] = [];
-    const currentDate = new Date(startDate);
-    const totalWeeks = 13; // ~90 days
-
-    for (let w = 0; w < totalWeeks; w++) {
-      const week: { date: string; score: number | null; day: number }[] = [];
+    const wks: { date: string; score: number | null }[][] = [];
+    const cur = new Date(start);
+    for (let w = 0; w < 7; w++) {
+      const week: { date: string; score: number | null }[] = [];
       for (let d = 0; d < 7; d++) {
-        const key = currentDate.toISOString().split("T")[0];
-        week.push({
-          date: key,
-          score: cycleMap.has(key) ? cycleMap.get(key)! : null,
-          day: currentDate.getDay(),
-        });
-        currentDate.setDate(currentDate.getDate() + 1);
+        const key = cur.toISOString().split("T")[0];
+        week.push({ date: key, score: map.has(key) ? map.get(key)! : null });
+        cur.setDate(cur.getDate() + 1);
       }
-      weekData.push(week);
+      wks.push(week);
     }
 
-    // Month labels
-    const labels: { label: string; col: number }[] = [];
-    let lastMonth = -1;
-    weekData.forEach((week, col) => {
-      const month = new Date(week[0].date).getMonth();
-      if (month !== lastMonth) {
-        labels.push({
-          label: new Date(week[0].date).toLocaleDateString("en-US", { month: "short" }),
-          col,
-        });
-        lastMonth = month;
-      }
-    });
+    const scores = Array.from(map.values());
+    const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+    const green = scores.filter(s => s >= 66).length;
+    const red = scores.filter(s => s < 33).length;
 
-    // Stats
-    const allScores = Array.from(cycleMap.values());
-    const avgScore =
-      allScores.length > 0
-        ? Math.round(allScores.reduce((a, b) => a + b, 0) / allScores.length)
-        : null;
-    const greenDays = allScores.filter((s) => s >= 66).length;
-    const redDays = allScores.filter((s) => s < 33).length;
-
-    return {
-      weeks: weekData,
-      monthLabels: labels,
-      stats: { avgScore, greenDays, redDays, totalDays: allScores.length },
-    };
-  }, [cycles]);
+    return { weeks: wks, stats: { avg, green, red, total: scores.length } };
+  }, [recovery]);
 
   if (loading) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-xl">
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" />
-        <div className="h-8 w-48 rounded-lg bg-white/[0.06] mb-4" />
-        <div className="h-28 rounded-xl bg-white/[0.04]" />
-      </div>
-    );
-  }
-
-  if (weeks.length === 0) {
-    return (
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-8 backdrop-blur-xl">
-        <div className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.04]">
-            <span className="text-xl">📅</span>
-          </div>
-          <p className="text-sm font-medium text-white/60">No recovery data</p>
-          <p className="mt-1 text-xs text-white/30">Recovery scores will appear here over time</p>
-        </div>
+      <div className="glass p-5">
+        <div className="skeleton skeleton--title mb-3" />
+        <div className="skeleton" style={{ height: 120 }} />
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-xl">
-      {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-white/90">Recovery Heatmap</h3>
-          <p className="mt-0.5 text-xs text-white/40">Last 90 days · Daily recovery scores</p>
-        </div>
-        {stats.avgScore !== null && (
-          <div className="text-right">
-            <p className="text-lg font-bold text-white/80">{stats.avgScore}%</p>
-            <p className="text-[9px] font-medium uppercase tracking-wider text-white/30">
-              90d avg
-            </p>
-          </div>
+    <div className="glass p-5">
+      <div className="flex items-center justify-between mb-2">
+        <p className="section-title">Recovery Calendar</p>
+        {stats.avg !== null && (
+          <span className="text-lg font-bold text-white/80">{stats.avg}%</span>
         )}
       </div>
+      <p className="explanation">{explanation}</p>
 
-      {/* Stats row */}
-      {stats.totalDays > 0 && (
-        <div className="mb-4 flex gap-4">
-          <div className="flex items-center gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-sm bg-green-500" />
-            <span className="text-[10px] text-white/40">
-              {stats.greenDays} green ({Math.round((stats.greenDays / stats.totalDays) * 100)}%)
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-2.5 w-2.5 rounded-sm bg-red-500" />
-            <span className="text-[10px] text-white/40">
-              {stats.redDays} red ({Math.round((stats.redDays / stats.totalDays) * 100)}%)
-            </span>
-          </div>
+      {stats.total > 0 && (
+        <div className="flex gap-3 mt-2 mb-3">
+          <span className="flex items-center gap-1 text-[10px] text-white/40">
+            <span className="w-2.5 h-2.5 rounded-sm bg-green-500" /> {stats.green} green
+          </span>
+          <span className="flex items-center gap-1 text-[10px] text-white/40">
+            <span className="w-2.5 h-2.5 rounded-sm bg-red-500" /> {stats.red} red
+          </span>
         </div>
       )}
 
-      {/* Heatmap grid */}
-      <div className="relative overflow-x-auto">
+      <div className="overflow-x-auto">
         <div className="flex gap-[3px]">
-          {/* Day labels */}
-          <div className="flex flex-col gap-[3px] pt-0">
-            {DAY_LABELS.map((label, i) => (
-              <div
-                key={i}
-                className="flex h-[14px] w-[10px] items-center justify-center"
-              >
-                <span className="text-[7px] text-white/20">
-                  {i % 2 === 1 ? label : ""}
-                </span>
+          <div className="flex flex-col gap-[3px]">
+            {DAY_LABELS.map((l, i) => (
+              <div key={i} className="h-[14px] flex items-center">
+                <span className="text-[7px] text-white/20">{i % 2 === 1 ? l : ""}</span>
               </div>
             ))}
           </div>
-
-          {/* Weeks */}
           {weeks.map((week, wi) => (
             <div key={wi} className="flex flex-col gap-[3px]">
               {week.map((day, di) => (
                 <div
                   key={di}
-                  className="group relative h-[14px] w-[14px] cursor-pointer rounded-[3px] transition-all duration-150 hover:scale-150 hover:z-10"
-                  style={{
-                    backgroundColor: getColor(day.score),
-                    opacity: getIntensity(day.score),
+                  className="w-[14px] h-[14px] rounded-[3px] cursor-pointer transition-transform hover:scale-150 hover:z-10"
+                  style={{ backgroundColor: cellColor(day.score), opacity: cellOpacity(day.score) }}
+                  onMouseEnter={e => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setHovered({ date: day.date, score: day.score, x: r.left, y: r.top });
                   }}
-                  onMouseEnter={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setHoveredDay({
-                      date: day.date,
-                      score: day.score,
-                      x: rect.left,
-                      y: rect.top,
-                    });
-                  }}
-                  onMouseLeave={() => setHoveredDay(null)}
-                  title={
-                    day.score !== null
-                      ? `${day.date}: ${day.score}% recovery`
-                      : day.date
-                  }
+                  onMouseLeave={() => setHovered(null)}
                 />
               ))}
             </div>
           ))}
         </div>
-
-        {/* Month labels */}
-        <div className="relative mt-1 h-4">
-          {monthLabels.map((m, i) => (
-            <span
-              key={i}
-              className="absolute text-[8px] text-white/25"
-              style={{ left: `${14 + m.col * 17}px` }}
-            >
-              {m.label}
-            </span>
-          ))}
-        </div>
       </div>
 
-      {/* Legend */}
-      <div className="mt-3 flex items-center justify-between">
-        <span className="text-[9px] text-white/25">90 days</span>
+      <div className="flex items-center justify-between mt-2">
+        <span className="text-[8px] text-white/25">7 weeks</span>
         <div className="flex items-center gap-1">
           <span className="text-[8px] text-white/25">Low</span>
-          {["#ef4444", "#f97316", "#eab308", "#84cc16", "#22c55e"].map((color, i) => (
-            <div
-              key={i}
-              className="h-2.5 w-2.5 rounded-[2px]"
-              style={{ backgroundColor: color, opacity: 0.3 + i * 0.17 }}
-            />
+          {["#ef4444", "#eab308", "#22c55e"].map((c, i) => (
+            <div key={i} className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: c, opacity: 0.3 + i * 0.35 }} />
           ))}
           <span className="text-[8px] text-white/25">High</span>
         </div>
       </div>
 
-      {/* Tooltip */}
-      {hoveredDay && (
-        <div className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg border border-white/10 bg-black/90 px-2.5 py-1.5 shadow-xl backdrop-blur-xl"
-          style={{
-            left: hoveredDay.x + 7,
-            top: hoveredDay.y - 8,
-          }}
-        >
-          <p className="text-[10px] text-white/50">{hoveredDay.date}</p>
+      {hovered && (
+        <div className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-full rounded-lg border border-white/10 bg-black/90 px-2.5 py-1.5"
+          style={{ left: hovered.x + 7, top: hovered.y - 8 }}>
+          <p className="text-[10px] text-white/50">{hovered.date}</p>
           <p className="text-xs font-semibold text-white/80">
-            {hoveredDay.score !== null ? `${hoveredDay.score}% recovery` : "No data"}
+            {hovered.score !== null ? `${hovered.score}% recovery` : "No data"}
           </p>
         </div>
       )}

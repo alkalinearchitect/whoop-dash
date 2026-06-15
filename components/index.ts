@@ -1,11 +1,9 @@
 export { RecoveryGauge } from './RecoveryGauge';
 export { MetricCard } from './MetricCard';
 export { TrendChart } from './TrendChart';
-export { Hypnogram } from './Hypnogram';
 export { StrainZones } from './StrainZones';
 export { CalendarHeatmap } from './CalendarHeatmap';
 export { WorkoutCard } from './WorkoutCard';
-export { SignalsPanel } from './SignalsPanel';
 export { HrvChart } from './HrvChart';
-export { RecoveryBreakdown } from './RecoveryBreakdown';
-export { Streaks } from './Streaks';
+export { SleepScoreChart } from './SleepScoreChart';
+export { SurveySignals } from './SurveySignals';

@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+
+function redirectWithError(request: NextRequest, error: string, message?: string) {
+  const url = new URL('/', request.url);
+  url.searchParams.set('error', error);
+  if (message) url.searchParams.set('message', message);
+  return NextResponse.redirect(url);
+}
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
   const error = request.nextUrl.searchParams.get('error');
+  const state = request.nextUrl.searchParams.get('state');
+  const expectedState = request.cookies.get('whoop_oauth_state')?.value;
 
   if (error) {
-    return NextResponse.redirect(new URL(`/?error=${encodeURIComponent(error)}`, request.url));
+    return redirectWithError(request, error);
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL('/?error=no_code', request.url));
+    return redirectWithError(request, 'no_code');
+  }
+
+  if (!state || !expectedState || state !== expectedState) {
+    return redirectWithError(request, 'state_mismatch');
   }
 
   const clientId = process.env.WHOOP_CLIENT_ID;
@@ -18,11 +30,11 @@ export async function GET(request: NextRequest) {
   const redirectUri = process.env.WHOOP_REDIRECT_URI || process.env.NEXT_PUBLIC_WHOOP_REDIRECT_URI;
 
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(new URL('/?error=config&message=missing_credentials', request.url));
+    return redirectWithError(request, 'config', 'missing_credentials');
   }
 
   if (!redirectUri) {
-    return NextResponse.redirect(new URL('/?error=config&message=no_redirect_uri', request.url));
+    return redirectWithError(request, 'config', 'no_redirect_uri');
   }
 
   try {
@@ -41,7 +53,7 @@ export async function GET(request: NextRequest) {
     const responseText = await tokenRes.text();
 
     if (!tokenRes.ok) {
-      return NextResponse.redirect(new URL(`/?error=token_failed&status=${tokenRes.status}`, request.url));
+      return redirectWithError(request, 'token_failed', `status_${tokenRes.status}`);
     }
 
     const tokenData = JSON.parse(responseText);
@@ -49,31 +61,33 @@ export async function GET(request: NextRequest) {
     const refreshToken = tokenData.refresh_token;
 
     if (!accessToken) {
-      return NextResponse.redirect(new URL('/?error=no_token', request.url));
+      return redirectWithError(request, 'no_token');
     }
 
-    const cookieStore = await cookies();
+    const response = NextResponse.redirect(new URL('/?connected=true', request.url));
 
-    cookieStore.set('whoop_token', accessToken, {
+    response.cookies.set('whoop_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
       path: '/',
     });
 
     if (refreshToken) {
-      cookieStore.set('whoop_refresh_token', refreshToken, {
+      response.cookies.set('whoop_refresh_token', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: 60 * 60 * 24 * 30,
         path: '/',
       });
     }
 
-    return NextResponse.redirect(new URL('/?connected=true', request.url));
+    response.cookies.delete('whoop_oauth_state');
+
+    return response;
   } catch (e: any) {
-    return NextResponse.redirect(new URL(`/?error=server&message=${encodeURIComponent(e.message || 'unknown')}`, request.url));
+    return redirectWithError(request, 'server', e.message || 'unknown');
   }
 }

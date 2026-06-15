@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Flame, Moon, Target, Zap } from "lucide-react";
-import type { Cycle, Recovery, SleepRecord } from "../lib/whoop";
+import type { WhoopCycle as Cycle, WhoopRecovery as Recovery, WhoopSleep as SleepRecord } from "../lib/whoop";
 import { pct, computeStreak } from "../lib/dashboard-utils";
 
 interface StreaksProps {
@@ -72,8 +72,8 @@ export function Streaks({ cycles, recovery, sleep, loading }: StreaksProps) {
         label: "Low strain <10",
         icon: <Target className="w-4 h-4" />,
         count: strainStreak,
-        color: "#3b82f6",
-        bgColor: "bg-blue-500/10",
+        color: "#00d4ff",
+        bgColor: "bg-cyan-500/10",
         threshold: "<10",
       },
       {
@@ -92,7 +92,7 @@ export function Streaks({ cycles, recovery, sleep, loading }: StreaksProps) {
 
   if (loading) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-xl">
+      <div className="panel p-6">
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" />
         <div className="h-8 w-32 rounded-lg bg-white/[0.06] mb-4" />
         <div className="grid grid-cols-2 gap-3">
@@ -106,13 +106,13 @@ export function Streaks({ cycles, recovery, sleep, loading }: StreaksProps) {
 
   if (activeStreaks.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-xl">
+      <div className="panel p-6">
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-white/90">Streak Tracking</h3>
           <p className="mt-0.5 text-xs text-white/40">Build consistency to unlock streaks</p>
         </div>
         <div className="flex items-center gap-3 rounded-xl border border-white/[0.04] bg-white/[0.02] p-4">
-          <span className="text-2xl">🔥</span>
+          <Flame className="h-6 w-6 text-[#ff2d55]" />
           <div>
             <p className="text-sm font-medium text-white/60">No active streaks yet</p>
             <p className="text-[10px] text-white/30">Keep your recovery above 66% to start building</p>
@@ -123,10 +123,10 @@ export function Streaks({ cycles, recovery, sleep, loading }: StreaksProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 backdrop-blur-xl">
+    <div className="panel p-6">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-white/90">🔥 Streak Tracking</h3>
+          <h3 className="text-sm font-semibold text-white/90">Streak Tracking</h3>
           <p className="mt-0.5 text-xs text-white/40">{activeStreaks.length} active streak{activeStreaks.length !== 1 ? "s" : ""}</p>
         </div>
       </div>
@@ -166,10 +166,10 @@ export function Streaks({ cycles, recovery, sleep, loading }: StreaksProps) {
 
       {/* Best streak highlight */}
       {activeStreaks.length > 0 && (
-        <div className="mt-4 rounded-xl border border-amber-500/10 bg-amber-500/[0.04] p-3 flex items-center gap-3">
-          <span className="text-lg">🏆</span>
+        <div className="mt-4 rounded-xl border border-[#ff2d55]/10 bg-[#ff2d55]/[0.04] p-3 flex items-center gap-3">
+          <Zap className="h-5 w-5 text-[#ff2d55]" />
           <div>
-            <p className="text-xs font-medium text-amber-400/80">
+            <p className="text-xs font-medium text-[#ff2d55]/80">
               Best streak: {Math.max(...activeStreaks.map(s => s.count))} days
             </p>
             <p className="text-[10px] text-white/30">

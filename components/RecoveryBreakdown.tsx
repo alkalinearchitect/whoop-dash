@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Heart, Activity, Moon } from "lucide-react";
-import type { Recovery } from "../lib/whoop";
+import type { WhoopRecovery as Recovery } from "../lib/whoop";
 import { pct } from "../lib/utils";
 
 interface RecoveryBreakdownProps {
