@@ -35,7 +35,7 @@ export function StrainZones({ workouts, loading }: StrainZonesProps) {
       const zd = w.score?.zone_duration;
       if (!zd) return;
       ZONE_CONFIG.forEach((z) => {
-        zoneTotals[z.key] += (zd[z.key] as number) || 0;
+        zoneTotals[z.key] += Number(zd[z.key]) || 0;
       });
     });
 

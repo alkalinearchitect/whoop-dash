@@ -84,7 +84,7 @@ export function WorkoutCard({ workout, loading }: WorkoutCardProps) {
       ms: zd?.[key] ?? 0,
       color: ZONE_COLORS[i],
     }));
-    const totalZoneMs = zones.reduce((s, z) => s + z.ms, 0) || 1;
+    const totalZoneMs = zones.reduce((s, z) => s + (z.ms || 0), 0) || 1;
     const zonePcts = zones.map((z) => ({
       ...z,
       pct: Math.round((z.ms / totalZoneMs) * 100),

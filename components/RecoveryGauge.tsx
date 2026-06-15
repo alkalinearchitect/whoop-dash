@@ -62,7 +62,7 @@ export function RecoveryGauge({
         <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/[0.03] to-transparent" />
         <div className="flex flex-col items-center">
           <div
-            className="rounded-full bg-white/[0.04)]"
+            className="rounded-full bg-white/[0.04]"
             style={{ width: size, height: size }}
           />
         </div>

@@ -58,7 +58,7 @@ export function Hypnogram({ sleeps, loading }: HypnogramProps) {
   const [selectedNight, setSelectedNight] = useState<number | null>(null);
 
   const nights = useMemo(() => {
-    return sleeps
+    const res = sleeps
       .filter((s) => !s.nap && s.score?.stage_summary)
       .sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime())
       .slice(0, 14)
@@ -87,6 +87,7 @@ export function Hypnogram({ sleeps, loading }: HypnogramProps) {
           endTime: formatTime(s.end),
         };
       });
+    return res;
   }, [sleeps]);
 
   if (loading) {

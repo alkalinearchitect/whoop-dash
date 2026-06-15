@@ -32,7 +32,7 @@ export function MetricCard({
 }: MetricCardProps) {
   const formattedValue = useMemo(() => {
     if (typeof value === "number") {
-      return value.toFixed(1);
+      return Number.isInteger(value) ? String(value) : value.toFixed(1);
     }
     return value;
   }, [value]);

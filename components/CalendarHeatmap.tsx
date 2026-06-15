@@ -49,7 +49,8 @@ export function CalendarHeatmap({ cycles, loading }: CalendarHeatmapProps) {
       const key = date.toISOString().split("T")[0];
       const score = c.score?.recovery_score;
       if (score !== null && score !== undefined) {
-        cycleMap.set(key, score);
+        // WHOOP returns recovery_score as 0-1 float, convert to percentage
+        cycleMap.set(key, score <= 1 ? Math.round(score * 100) : Math.round(score));
       }
     });
 

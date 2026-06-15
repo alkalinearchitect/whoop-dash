@@ -1,5 +1,4 @@
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import {
   Activity, Moon, Heart, Flame, TrendingUp, TrendingDown,
   Minus, Zap, Droplets, Thermometer, Wind, Award, Calendar,
@@ -17,8 +16,8 @@ import { WorkoutCard } from '@/components/WorkoutCard';
 import { SignalsPanel } from '@/components/SignalsPanel';
 import { RecoveryBreakdown } from '@/components/RecoveryBreakdown';
 import { Streaks } from '@/components/Streaks';
-import type { Cycle, Recovery, SleepRecord, Workout, User } from '@/lib/whoop';
 import { generateMockData } from '@/lib/whoop';
+import type { Cycle, Recovery, SleepRecord, Workout } from '@/lib/whoop';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -32,82 +31,56 @@ function safeNum(val: number | null | undefined, decimals = 0): string {
   return decimals > 0 ? val.toFixed(decimals) : String(Math.round(val));
 }
 
-function cycleStrain(c: Cycle | any): number {
-  if (c?.score?.strain != null) return c.score.strain;
-  if (c?.strain != null) return c.strain;
-  return 0;
+function cycleStrain(c: Cycle): number {
+  return c?.score?.strain ?? 0;
 }
 
-function recoveryScore(r: Recovery | any): number {
-  if (r?.score?.recovery_score != null) return pct(r.score.recovery_score) ?? 0;
-  if (r?.recovery_score != null) return pct(r.recovery_score) ?? 0;
-  return 0;
+function recoveryScore(r: Recovery): number {
+  return pct(r?.score?.recovery_score) ?? 0;
 }
 
-function recoveryHRV(r: Recovery | any): number {
-  if (r?.score?.hrv_rmssd != null) return Math.round(r.score.hrv_rmssd);
-  if (r?.hrv_rmssd != null) return Math.round(r.hrv_rmssd);
-  return 0;
+function recoveryHRV(r: Recovery): number {
+  return Math.round(r?.score?.hrv_rmssd ?? 0);
 }
 
-function recoveryRHR(r: Recovery | any): number {
-  if (r?.score?.resting_heart_rate != null) return Math.round(r.score.resting_heart_rate);
-  if (r?.resting_heart_rate != null) return Math.round(r.resting_heart_rate);
-  return 0;
+function recoveryRHR(r: Recovery): number {
+  return Math.round(r?.score?.resting_heart_rate ?? 0);
 }
 
-function recoverySpO2(r: Recovery | any): number {
-  if (r?.score?.spo2 != null) return r.score.spo2;
-  if (r?.spo2 != null) return r.spo2;
-  return 0;
+function recoverySpO2(r: Recovery): number {
+  return r?.score?.spo2 ?? 0;
 }
 
-function recoverySkinTemp(r: Recovery | any): number {
-  if (r?.score?.skin_temp_celsius != null) return r.score.skin_temp_celsius;
-  if (r?.skin_temp_celsius != null) return r.skin_temp_celsius;
-  return 0;
+function recoverySkinTemp(r: Recovery): number {
+  return r?.score?.skin_temp_celsius ?? 0;
 }
 
-function sleepEfficiency(s: SleepRecord | any): number {
-  if (s?.score?.sleep_efficiency_percentage != null) return pct(s.score.sleep_efficiency_percentage) ?? 0;
-  if (s?.sleep_efficiency_percentage != null) return pct(s.sleep_efficiency_percentage) ?? 0;
-  return 0;
+function sleepEfficiency(s: SleepRecord): number {
+  return pct(s?.score?.sleep_efficiency_percentage) ?? 0;
 }
 
-function sleepConsistency(s: SleepRecord | any): number {
-  if (s?.score?.sleep_consistency_percentage != null) return pct(s.score.sleep_consistency_percentage) ?? 0;
-  if (s?.sleep_consistency_percentage != null) return pct(s.sleep_consistency_percentage) ?? 0;
-  return 0;
+function sleepConsistency(s: SleepRecord): number {
+  return pct(s?.score?.sleep_consistency_percentage) ?? 0;
 }
 
-function sleepPerformance(s: SleepRecord | any): number {
-  if (s?.score?.sleep_performance_percentage != null) return pct(s.score.sleep_performance_percentage) ?? 0;
-  if (s?.sleep_performance_percentage != null) return pct(s.sleep_performance_percentage) ?? 0;
-  return 0;
+function sleepPerformance(s: SleepRecord): number {
+  return pct(s?.score?.sleep_performance_percentage) ?? 0;
 }
 
-function sleepRespiratoryRate(s: SleepRecord | any): number {
-  if (s?.score?.respiratory_rate != null) return s.score.respiratory_rate;
-  if (s?.respiratory_rate != null) return s.respiratory_rate;
-  return 0;
+function sleepRespiratoryRate(s: SleepRecord): number {
+  return s?.score?.respiratory_rate ?? 0;
 }
 
-function sleepInBed(s: SleepRecord | any): number {
-  if (s?.score?.stage_summary?.total_in_bed_time_milli != null) return s.score.stage_summary.total_in_bed_time_milli;
-  if (s?.total_in_bed_time_milli != null) return s.total_in_bed_time_milli;
-  return 0;
+function sleepInBed(s: SleepRecord): number {
+  return s?.score?.stage_summary?.total_in_bed_time_milli ?? 0;
 }
 
-function sleepNeeded(s: SleepRecord | any): number {
-  if (s?.score?.sleep_needed?.baseline_milli != null) return s.score.sleep_needed.baseline_milli;
-  if (s?.sleep_needed?.baseline_milli != null) return s.sleep_needed.baseline_milli;
-  return 0;
+function sleepNeeded(s: SleepRecord): number {
+  return s?.score?.sleep_needed?.baseline_milli ?? 0;
 }
 
-function sleepDisturbances(s: SleepRecord | any): number {
-  if (s?.score?.stage_summary?.disturbance_count != null) return s.score.stage_summary.disturbance_count;
-  if (s?.disturbances != null) return s.disturbances;
-  return 0;
+function sleepDisturbances(s: SleepRecord): number {
+  return s?.score?.stage_summary?.disturbance_count ?? 0;
 }
 
 function formatDuration(ms: number): string {
@@ -129,15 +102,13 @@ function formatDate(dateStr: string): string {
 async function fetchWhoopData(limit: number = 30) {
   const cookieStore = await cookies();
   const token = cookieStore.get('whoop_token')?.value;
-  const clientId = process.env.NEXT_PUBLIC_WHOOP_CLIENT_ID;
-  const clientSecret = process.env.WHOOP_CLIENT_SECRET;
 
   // Try real API if token exists
   if (token) {
     try {
       const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
       const [userRes, cyclesRes, recoveryRes, sleepRes, workoutsRes] = await Promise.all([
-        fetch('https://api.prod.whoop.com/developer/v2/user/profile/basic', { headers }),
+        fetch('https://api.prod.whoop.com/developer/v2/user/profile', { headers }),
         fetch(`https://api.prod.whoop.com/developer/v2/cycle?limit=${limit}`, { headers }),
         fetch(`https://api.prod.whoop.com/developer/v2/recovery?limit=${limit}`, { headers }),
         fetch(`https://api.prod.whoop.com/developer/v2/activity/sleep?limit=${limit}`, { headers }),
@@ -172,7 +143,7 @@ async function fetchWhoopData(limit: number = 30) {
 
 // ── Streak Computation ───────────────────────────────────────────────────────
 
-function computeStreak(items: any[], getter: (item: any) => number, threshold: number, above = true): number {
+function computeStreak(items: Recovery[] | SleepRecord[] | Cycle[], getter: (item: any) => number, threshold: number, above = true): number {
   let streak = 0;
   for (const item of items) {
     const val = getter(item);
@@ -185,7 +156,7 @@ function computeStreak(items: any[], getter: (item: any) => number, threshold: n
 
 // ── Signals ──────────────────────────────────────────────────────────────────
 
-function generateSignals(data: any) {
+function generateSignals(data: ReturnType<typeof generateMockData>) {
   const signals: { id: string; type: 'warning' | 'info' | 'success'; message: string; icon: string; timestamp: string }[] = [];
   if (!data) return signals;
 
@@ -222,8 +193,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   const data = await fetchWhoopData(selectedPeriod);
   const signals = generateSignals(data);
 
-  const recoveryStreak = computeStreak(data.recovery, (r: any) => recoveryScore(r), 66);
-  const sleepStreak = computeStreak(data.sleep, (s: any) => sleepEfficiency(s), 85);
+  const recoveryStreak = computeStreak(data.recovery, (r: Recovery) => recoveryScore(r), 66);
+  const sleepStreak = computeStreak(data.sleep, (s: SleepRecord) => sleepEfficiency(s), 85);
   const isLive = data.source === 'whoop-api';
 
   // Generate random state for CSRF protection
@@ -378,7 +349,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   Sleep Need vs Actual
                 </h3>
                 <div className="space-y-2 sm:space-y-3">
-                  {data?.sleep.slice(0, 5).map((s: any, i: number) => {
+                  {data?.sleep.slice(0, 5).map((s: SleepRecord, i: number) => {
                     const needed = sleepNeeded(s);
                     const actual = sleepInBed(s);
                     const perf = sleepPerformance(s);
@@ -438,7 +409,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                   <span className="text-lg sm:text-xl text-zinc-500 ml-1">°C</span>
                 </div>
                 <div className="space-y-1.5 sm:space-y-2">
-                  {data?.recovery.slice(0, 5).map((r: any, i: number) => (
+                  {data?.recovery.slice(0, 5).map((r: Recovery, i: number) => (
                     <div key={i} className="flex items-center justify-between text-[10px] sm:text-xs">
                       <span className="text-zinc-500">{formatDate(r.created_at)}</span>
                       <span className="text-zinc-300">{safeNum(recoverySkinTemp(r), 1)}°C</span>
@@ -473,10 +444,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         {activeTab === 'sleep' && (
           <div className="space-y-4 sm:space-y-6 animate-fade-in-up">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <MetricCard label="Avg Efficiency" value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: any) => a + sleepEfficiency(s), 0) / data.sleep.length) : 0)} unit="%" icon={<Moon className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#6366f1" trend="stable" />
-              <MetricCard label="Avg Consistency" value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: any) => a + sleepConsistency(s), 0) / data.sleep.length) : 0)} unit="%" icon={<Target className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#8b5cf6" trend="stable" />
-              <MetricCard label="Avg Time in Bed" value={data?.sleep?.length ? formatDuration(Math.round(data.sleep.reduce((a: number, s: any) => a + sleepInBed(s), 0) / data.sleep.length)) : '—'} unit="" icon={<Timer className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#06b6d4" trend="stable" />
-              <MetricCard label="Avg Disturbances" value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: any) => a + sleepDisturbances(s), 0) / data.sleep.length) : 0)} unit="" icon={<AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#f59e0b" trend="stable" />
+              <MetricCard label="Avg Efficiency" value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepEfficiency(s), 0) / data.sleep.length) : 0)} unit="%" icon={<Moon className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#6366f1" trend="stable" />
+              <MetricCard label="Avg Consistency" value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepConsistency(s), 0) / data.sleep.length) : 0)} unit="%" icon={<Target className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#8b5cf6" trend="stable" />
+              <MetricCard label="Avg Time in Bed" value={data?.sleep?.length ? formatDuration(Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepInBed(s), 0) / data.sleep.length)) : '—'} unit="" icon={<Timer className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#06b6d4" trend="stable" />
+              <MetricCard label="Avg Disturbances" value={safeNum(data?.sleep?.length ? Math.round(data.sleep.reduce((a: number, s: SleepRecord) => a + sleepDisturbances(s), 0) / data.sleep.length) : 0)} unit="" icon={<AlertTriangle className="w-3 h-3 sm:w-4 sm:h-4" />} accentColor="#f59e0b" trend="stable" />
             </div>
 
             <Hypnogram sleeps={data?.sleep || []} />
@@ -487,9 +458,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 <Moon className="w-3 h-3 sm:w-4 sm:h-4 text-indigo-400" />
                 Nap Detection
               </h3>
-              {data?.sleep?.filter((s: any) => s.nap).length > 0 ? (
+              {data?.sleep?.filter((s: SleepRecord) => s.nap).length > 0 ? (
                 <div className="space-y-2">
-                  {data.sleep.filter((s: any) => s.nap).map((s: any, i: number) => (
+                  {data.sleep.filter((s: SleepRecord) => s.nap).map((s: SleepRecord, i: number) => (
                     <div key={i} className="flex items-center justify-between p-2 sm:p-3 bg-white/[0.02] rounded-xl border border-white/5">
                       <span className="text-[10px] sm:text-xs text-zinc-400">{formatDate(s.start)}</span>
                       <span className="text-[10px] sm:text-xs text-indigo-400 font-medium">{formatDuration(sleepInBed(s))}</span>
@@ -515,7 +486,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 </h3>
                 <div className="h-48 sm:h-64">
                   <TrendChart
-                    data={data?.cycles?.slice(0, selectedPeriod).reverse().map((c: any) => ({ date: formatDate(c.start), value: cycleStrain(c) })) || []}
+                    data={data?.cycles?.slice(0, selectedPeriod).reverse().map((c: Cycle) => ({ date: formatDate(c.start), value: cycleStrain(c) })) || []}
                     dataKey="value"
                     color="#f59e0b"
                     label="Strain"
@@ -530,7 +501,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 Recent Workouts
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                {data?.workouts?.slice(0, 9).map((w: any, i: number) => (
+                {data?.workouts?.slice(0, 9).map((w: Workout, i: number) => (
                   <WorkoutCard key={i} workout={w} />
                 ))}
               </div>
@@ -545,25 +516,25 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <div className="glass-card p-4 sm:p-6">
                 <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">HRV Trend (ms)</h3>
                 <div className="h-48 sm:h-64">
-                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoveryHRV(r) })) || []} color="#06b6d4" label="HRV" dataKey="value" />
+                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: Recovery) => ({ date: formatDate(r.created_at), value: recoveryHRV(r) })) || []} color="#06b6d4" label="HRV" dataKey="value" />
                 </div>
               </div>
               <div className="glass-card p-4 sm:p-6">
                 <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">Resting Heart Rate (bpm)</h3>
                 <div className="h-48 sm:h-64">
-                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoveryRHR(r) })) || []} color="#ef4444" label="RHR" dataKey="value" />
+                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: Recovery) => ({ date: formatDate(r.created_at), value: recoveryRHR(r) })) || []} color="#ef4444" label="RHR" dataKey="value" />
                 </div>
               </div>
               <div className="glass-card p-4 sm:p-6">
                 <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">SpO2 Trend (%)</h3>
                 <div className="h-48 sm:h-64">
-                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoverySpO2(r) })) || []} color="#10b981" label="SpO2" dataKey="value" />
+                  <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: Recovery) => ({ date: formatDate(r.created_at), value: recoverySpO2(r) })) || []} color="#10b981" label="SpO2" dataKey="value" />
                 </div>
               </div>
               <div className="glass-card p-4 sm:p-6">
                 <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">Respiratory Rate (brpm)</h3>
                 <div className="h-48 sm:h-64">
-                  <TrendChart data={data?.sleep?.slice(0, selectedPeriod).reverse().map((s: any) => ({ date: formatDate(s.start), value: sleepRespiratoryRate(s) })) || []} color="#8b5cf6" label="Resp Rate" dataKey="value" />
+                  <TrendChart data={data?.sleep?.slice(0, selectedPeriod).reverse().map((s: SleepRecord) => ({ date: formatDate(s.start), value: sleepRespiratoryRate(s) })) || []} color="#8b5cf6" label="Resp Rate" dataKey="value" />
                 </div>
               </div>
             </div>
@@ -571,7 +542,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <div className="glass-card p-4 sm:p-6">
               <h3 className="text-xs sm:text-sm font-medium text-zinc-400 mb-3 sm:mb-4">Recovery Score Trend</h3>
               <div className="h-48 sm:h-64">
-                <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: any) => ({ date: formatDate(r.created_at), value: recoveryScore(r) })) || []} color="#06b6d4" label="Recovery" dataKey="value" />
+                <TrendChart data={data?.recovery?.slice(0, selectedPeriod).reverse().map((r: Recovery) => ({ date: formatDate(r.created_at), value: recoveryScore(r) })) || []} color="#06b6d4" label="Recovery" dataKey="value" />
               </div>
             </div>
           </div>

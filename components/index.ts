@@ -6,5 +6,6 @@ export { StrainZones } from './StrainZones';
 export { CalendarHeatmap } from './CalendarHeatmap';
 export { WorkoutCard } from './WorkoutCard';
 export { SignalsPanel } from './SignalsPanel';
+export { HrvChart } from './HrvChart';
 export { RecoveryBreakdown } from './RecoveryBreakdown';
 export { Streaks } from './Streaks';

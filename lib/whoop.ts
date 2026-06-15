@@ -241,9 +241,9 @@ export class WhoopAPI {
 
   // -- endpoints --------------------------------------------------------------
 
-  /** GET /user/profile */
+  /** GET /user/profile/basic */
   async getUserProfile(): Promise<User> {
-    return this.request<User>("/user/profile");
+    return this.request<User>("/user/profile/basic");
   }
 
   /** GET /cycle — returns `limit` most-recent cycles. */
